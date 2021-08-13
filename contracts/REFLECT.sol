@@ -36,7 +36,7 @@ contract DappToken is IERC20 {
     
     uint256 private _redistributionValue;
     
-    uint256 private _totalSupply = 1000000000000000;
+    uint256 private _totalSupply = 1000000000000000 * 10**18;
     uint256 private _blackListedAmount;
     
     uint256 private _redistributed;

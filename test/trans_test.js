@@ -22,7 +22,7 @@ contract('REFLECT.sol', async (accounts) => {
   var walletF;
   var walletG;
   // values for holding larger numbers, to prevent typos
-  var oneT = 1000000000000;
+  var oneT = BigNumber("10e+28");
   var oneM = 1000000;
 
   /****************************************************************************************/
@@ -34,7 +34,7 @@ contract('REFLECT.sol', async (accounts) => {
     // Get total token supply(in contract)
     originalSupply = await config.reflect.totalSupply.call({from: config.owner});
 
-    assert.equal(originalSupply, 1000000000000000, "Fetches the total coin supply");
+    assert.equal(originalSupply, Math.pow(10, 33), "Fetches the total coin supply");
 
   });
 
@@ -64,7 +64,7 @@ contract('REFLECT.sol', async (accounts) => {
     let FSupply = await config.reflect.balanceOf.call(walletF, {from: config.owner});
     let GSupply = await config.reflect.balanceOf.call(walletG, {from: config.owner});
 
-    walletSupply = BSupply.toNumber() + CSupply.toNumber() + DSupply.toNumber() + ESupply.toNumber() + FSupply.toNumber() + GSupply.toNumber();
+    walletSupply = new BigNumber.sum(BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
     
     assert.equal(walletSupply, oneT * 6, "Total of all wallets should be 6T");
 
@@ -96,10 +96,10 @@ contract('REFLECT.sol', async (accounts) => {
     // Get total token supply(in contract)
     totalSupply = await config.reflect.totalSupply.call({from: config.owner});
 
-    let allWalletSupply = ownerSupply.toNumber() + BSupply.toNumber() + CSupply.toNumber() + DSupply.toNumber() + ESupply.toNumber() + FSupply.toNumber() + GSupply.toNumber();
+    let allWalletSupply = new BigNumber.sum(ownerSupply, BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
 
     console.log('Sum of all wallets: ', allWalletSupply);    
-    console.log('Total supply: ', totalSupply.toNumber());  
+    console.log('Total supply: ', BigNumber(totalSupply));  
 
     // Use Math.floor() to simulate Solidity's natural rounding down of decimals
     assert.equal(totalSupply, Math.floor(allWalletSupply), "Sum of all wallets should equal total supply.");
@@ -110,20 +110,22 @@ contract('REFLECT.sol', async (accounts) => {
   /* Test Reflection AFTER Transfers Between Non-Exempt Wallets                           */
   /****************************************************************************************/
 
-  it(`5. Transfer 1M from wallet to wallet`, async function () {
+  it(`5. Transfer tokens from wallet to wallet`, async function () {
 
     // Array of all wallets EXCLUDING walletG - reserved as a bystander to collect reflection
     var walletArray = [walletB, walletC, walletD, walletE, walletF]
     var senderArray = [walletC, walletD, walletE, walletF, walletG]
 
+// values used for test loops: 15, 3, 31
 //                  V - number of loops through the loop 
-    for(i = 0; i < 32; i++) {
+    for(i = 0; i < 31; i++) {
         for(j = 0; j < walletArray.length; j++) {
             let addyRecip = walletArray[j];
             let addySender = senderArray[j];
-            // Transfer one million coins from owner to walletB - E
-            //                                         V - Transaction value
-            await config.reflect.transfer(addyRecip, 1000000000, {from: addySender});
+            // Transfer coins from owner to walletB - E
+            // values used for transaction values: 27,400,000, 600,000,000, 5,000,430,000
+            //                                                          V - Transaction value
+            await config.reflect.transfer(addyRecip, new BigNumber("5000430000").times(10000000000000000), {from: addySender});
         }
     }
 
@@ -136,13 +138,12 @@ contract('REFLECT.sol', async (accounts) => {
     let FSupply = await config.reflect.balanceOf.call(walletF, {from: config.owner});
     let GSupply = await config.reflect.balanceOf.call(walletG, {from: config.owner});
 
-    walletSupply = ownerSupply.toNumber() + BSupply.toNumber() + CSupply.toNumber() + DSupply.toNumber() + ESupply.toNumber() + FSupply.toNumber() + GSupply.toNumber();
-
+    walletSupply = new BigNumber.sum(ownerSupply, BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
+    console.log(walletSupply);
     // Get total token supply(in contract)
     totalSupply = await config.reflect.totalSupply.call({from: config.owner});
-    console.log('sum of all wallets : ', walletSupply);
-    console.log('totalSupply : ', totalSupply.toNumber());
-    assert.isAtLeast(totalSupply.toNumber(), walletSupply, "Total of all wallets should equal total supply");
+    
+    assert.equal(BigNumber(totalSupply), walletSupply, "Total of all wallets should equal total supply");
 
   });
 
