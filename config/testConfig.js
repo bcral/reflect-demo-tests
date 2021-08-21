@@ -1,6 +1,5 @@
 
-var REFLECT = artifacts.require("DappToken");
-var BigNumber = require('bignumber.js');
+var REFLECT = artifacts.require("DEMO");
 
 var Config = async function(accounts) {
     
@@ -19,7 +18,7 @@ var Config = async function(accounts) {
         "0x746DDd1EC9739774e6e851D596895995c96c73d8"
     ];
 
-
+    // Wallets
     let owner = accounts[0];
 
     // Throw constructor data as args in the .new() function
@@ -29,8 +28,6 @@ var Config = async function(accounts) {
         owner: owner,
         reflect: reflect,
         testAddresses: testAddresses,
-        // To make smaller transactions easier
-        weiMultiple: (new BigNumber(10)).pow(18),
     }
 }
 

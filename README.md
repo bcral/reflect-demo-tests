@@ -1,14 +1,20 @@
 ## Reflection Token Test
+Final Reflection tests
 
-I made mocha test for reflection token which randombytez created.
-
-Of course, I made some change because there is no some feature such as excluded feature in his token.
+Test overview:
+main_test.js
+black_test.js
+mint_test.js
+trans_test.js
+trans_test2.js
+trans_test3.js
 
 -------------------------------------------------------------------------------------------------------
 
 ** install **
 $ npm install(yarn install)
-you have to install ganache and change test address in config file.
+you have to install ganache-cli and launch ganache-cli with this command to use built-in addresses
+$ ganache-cli -m "three elevator bus mutual celery belt priority mistake lemon supply dog time"
 
 ** start **
 $ truffle test

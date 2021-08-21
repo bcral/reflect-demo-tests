@@ -2,7 +2,7 @@
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 
-contract('DEMO - trans_test.js', async (accounts) => {
+contract('DEMO - trans_test2.js', async (accounts) => {
 
   var config;
   before('setup contract', async () => {
@@ -22,7 +22,8 @@ contract('DEMO - trans_test.js', async (accounts) => {
   var walletF;
   var walletG;
   // values for holding larger numbers, to prevent typos
-  var oneT = BigNumber("10e+18");
+  var oneT = new BigNumber(100000000000000000000);
+  var oneM = 1000000;
 
   /****************************************************************************************/
   /* Operations and Settings                                                              */
@@ -33,14 +34,19 @@ contract('DEMO - trans_test.js', async (accounts) => {
     // Get total token supply(in contract)
     originalSupply = await config.reflect.totalSupply.call({from: config.owner});
 
-    assert.equal(originalSupply, Math.pow(10, 21), "Fetches the total coin supply");
+    // Set walletB address
+    walletB = config.testAddresses[1];
+
+    // Blacklist walletB before any transfers are made
+    await config.reflect.blackList(walletB, {from: config.owner});
+
+    assert.equal(BigNumber(originalSupply).toString(), 1000000000000000000000, "Fetches the total coin supply");
 
   });
 
   it(`2. Transfer 1T from owner to walletB, C, D, E, F, and G`, async function () {
 
-    // Set walletB - G address
-    walletB = config.testAddresses[1];
+    // Set walletC - G address
     walletC = config.testAddresses[2];
     walletD = config.testAddresses[3];
     walletE = config.testAddresses[4];
@@ -65,7 +71,7 @@ contract('DEMO - trans_test.js', async (accounts) => {
 
     walletSupply = new BigNumber.sum(BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
     
-    assert.equal(walletSupply, oneT * 6, "Total of all wallets should be 6T");
+    assert.equal(walletSupply, BigNumber(oneT).times(6).toString(), "Total of all wallets should be 6T");
 
   });
 
@@ -78,7 +84,7 @@ contract('DEMO - trans_test.js', async (accounts) => {
     // Find the total supply
     totalSupply = await config.reflect.totalSupply.call({from: config.owner});
 
-    assert.equal(totalSupply, 1000000000000000000000, "Total supply should be 1,000,000,000,000,000");
+    assert.equal(totalSupply.toString(), 1000000000000000000000, "Total supply should be 1000000000000000000000");
   });
 
   it(`4. Check sum of all wallets vs. total supply.`, async function () {
@@ -98,51 +104,54 @@ contract('DEMO - trans_test.js', async (accounts) => {
     let allWalletSupply = new BigNumber.sum(ownerSupply, BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
 
     console.log('Sum of all wallets: ', allWalletSupply);    
-    console.log('Total supply: ', totalSupply);  
+    console.log('Total supply: ', BigNumber(totalSupply));  
 
     // Use Math.floor() to simulate Solidity's natural rounding down of decimals
-    assert.equal(totalSupply.toString(), Math.floor(allWalletSupply), "Sum of all wallets should equal total supply.");
+    assert.equal(totalSupply, Math.floor(allWalletSupply), "Sum of all wallets should equal total supply.");
   
   });
 
   /****************************************************************************************/
-  /* Test Reflection AFTER Transfers Between Non-Exempt Wallets                           */
+  /* Test Reflection AFTER Transfers From Non-Exempt Wallets                           */
   /****************************************************************************************/
 
   it(`5. Transfer tokens from wallet to wallet`, async function () {
 
-    // Array of all wallets EXCLUDING walletG - reserved as a bystander to collect reflection
-    var walletArray = [walletB, walletC, walletD, walletE, walletF]
-    var senderArray = [walletC, walletD, walletE, walletF, walletG]
+    // Transfer to and from any wallet but B or C
+    await config.reflect.transfer(walletD, BigNumber(500000000000000000), {from: walletF});
+    // Blacklist walletC after transfer
+    await config.reflect.blackList(walletC, {from: config.owner});
 
-// values used for test loops: 15, 3, 31
-//                  V - number of loops through the loop 
-    for(i = 0; i < 3; i++) {
-        for(j = 0; j < walletArray.length; j++) {
-            let addyRecip = walletArray[j];
-            let addySender = senderArray[j];
-            // Transfer coins from owner to walletB - E
-            // values used for transaction values: 2,740,000,000 60,000,000,000 500,043,000,000
-            //                                                          V - Transaction value
-            await config.reflect.transfer(addyRecip, new BigNumber("500043000000"), {from: addySender});
-        }
-    }
-
-    // Get total balance of walletB - G
-    let ownerSupply = await config.reflect.balanceOf.call(config.owner, {from: config.owner});
+    // Get total balance of walletB - D
     let BSupply = await config.reflect.balanceOf.call(walletB, {from: config.owner});
     let CSupply = await config.reflect.balanceOf.call(walletC, {from: config.owner});
     let DSupply = await config.reflect.balanceOf.call(walletD, {from: config.owner});
     let ESupply = await config.reflect.balanceOf.call(walletE, {from: config.owner});
-    let FSupply = await config.reflect.balanceOf.call(walletF, {from: config.owner});
-    let GSupply = await config.reflect.balanceOf.call(walletG, {from: config.owner});
 
-    walletSupply = new BigNumber.sum(ownerSupply, BSupply, CSupply, DSupply, ESupply, FSupply, GSupply);
-    console.log(walletSupply);
-    // Get total token supply(in contract)
-    totalSupply = await config.reflect.totalSupply.call({from: config.owner});
+    console.log("BSupply = ", BSupply);
+    console.log("CSupply = ", CSupply);
+    console.log("DSupply = ", DSupply);
+    console.log("ESupply = ", ESupply);
     
-    assert.equal(BigNumber(totalSupply).toString(), walletSupply.toString(), "Total of all wallets should equal total supply.");
+    assert.notEqual(ESupply, oneT, "If this number is the same, there was no reflection to walletE.");
+
+  });
+
+  it(`6 Transfer tokens from wallet to wallet`, async function () {
+
+    // Check C balance before transfer
+    let CBefore = await config.reflect.balanceOf.call(walletC, {from: config.owner});
+
+    // Transfer to and from any wallet but B or C
+    await config.reflect.transfer(walletE, BigNumber(7000000000000000), {from: walletD});
+
+    // Check C balance after transfer
+    let CAfter = await config.reflect.balanceOf.call(walletC, {from: config.owner});
+
+    console.log("CBefore = ", CBefore);
+    console.log("CAfter = ", CAfter);
+    
+    assert.equal(BigNumber(CBefore).toString(), BigNumber(CAfter).toString(), "If this test passes, there was no reflection to walletC.");
 
   });
 

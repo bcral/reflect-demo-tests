@@ -7,14 +7,14 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test ./test/main_test.js ./test/mint_test.js",
+    "test": "truffle test ./test/main_test.js ./test/black_test.js ./test/mint_test.js ./test/trans_test.js ./test/trans_test2.js ./test/trans_test3.js",
     "test_main": "truffle test ./test/main_test.js",
     "test_mint": "truffle test ./test/mint_test.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@openzeppelin/contracts": "^3.1.0",
+    "@openzeppelin/contracts": "^4.3.0",
     "@truffle/hdwallet-provider": "^1.4.1",
     "bignumber.js": "8.0.2"
   }
